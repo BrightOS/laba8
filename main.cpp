@@ -65,7 +65,6 @@ private:
     }
 
     pair<BigInteger, BigInteger> division(const BigInteger &right) {
-//        cout << endl;
         BigInteger result, temp, new_left = *this, new_right = right, ten("10");
         string string_result;
 
