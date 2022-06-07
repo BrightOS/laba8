@@ -1,6 +1,7 @@
 #include <iostream>
 #include <string>
 #include <sstream>
+
 #define BIG_INTEGER_SIZE 128
 
 using namespace std;
@@ -11,11 +12,21 @@ class WrongInputBigIntegerException : public std::exception {
     }
 };
 
+class DivisionBigIntegerException : public std::exception {
+    [[nodiscard]] const char *what() const noexcept override {
+        return "It is impossible to divide this two big integers.";
+    }
+};
+
 class BigInteger {
 private:
     static const int max_length = BIG_INTEGER_SIZE;
     int digits[max_length]{};
     bool positive{};
+
+    bool is_zero() {
+        return size() == 1 && digits[max_length - 1] == 0;
+    }
 
     void normalize() {
         if (size() == 1 && digits[max_length - 1] == 0)
@@ -67,6 +78,9 @@ private:
     pair<BigInteger, BigInteger> division(const BigInteger &right) {
         BigInteger result, temp, new_left = *this, new_right = right, ten("10");
         string string_result;
+
+        if (new_right.is_zero())
+            throw DivisionBigIntegerException();
 
         int left_size = new_left.size();
         int right_size = new_right.size();
@@ -127,11 +141,6 @@ public:
         convert_string_to_big_integer("0");
     }
 
-    ~BigInteger() {
-        delete[] &digits;
-        delete &positive;
-    }
-
     void change_sign() {
         positive = !positive;
     }
@@ -166,7 +175,7 @@ public:
         else if (!right.positive && positive)
             return false;
 
-        int i = 0;
+        int i;
         for (i = max_length - left_size; i < max_length && right.digits[i] == digits[i]; ++i);
 
         if (i >= max_length)
@@ -176,6 +185,18 @@ public:
             return digits[i] < right.digits[i];
         else
             return digits[i] > right.digits[i];
+    }
+
+    bool operator>(BigInteger &right) const {
+        return right < *this;
+    }
+
+    bool operator>=(const BigInteger &right) {
+        return !(*this < right);
+    }
+
+    bool operator<=(BigInteger &right) const {
+        return !(right < *this);
     }
 
     BigInteger operator-(const BigInteger &right) {
@@ -199,10 +220,7 @@ public:
             result = "-1";
             new_right.positive = true;
             new_left.positive = true;
-            if (new_left < new_right)
-                return (new_left - new_right) * result;
-            else
-                return (new_left - new_right) * result;
+            return (new_left - new_right) * result;
         }
 
         // a > 0, b > 0, a > b
@@ -345,9 +363,7 @@ public:
 };
 
 void test(const string &string_a, const string &string_b) {
-    BigInteger a, b;
-    a = string_a;
-    b = string_b;
+    BigInteger a(string_a), b(string_b);
     cout << "- = { X } = -" << endl
          << "a = " << a << endl
          << "b = " << b << endl
@@ -356,6 +372,9 @@ void test(const string &string_a, const string &string_b) {
          << "b - a = " << b - a << endl
          << "a * b = " << a * b << endl
          << "a < b = " << (a < b ? "true" : "false") << endl
+         << "a <= b = " << (a <= b ? "true" : "false") << endl
+         << "a > b = " << (a > b ? "true" : "false") << endl
+         << "a >= b = " << (a >= b ? "true" : "false") << endl
          << "a / b = " << a / b << endl
          << "b / a = " << b / a << endl
          << "a % b = " << a % b << endl
@@ -370,5 +389,6 @@ int main() {
     test("228133722813371", "727727727727727"); // Два длиной 15
     test("55555555555555555555", "12"); // Одной длиной 20, второе - двухзначное
     test("1234", "4321"); // Два четырёхзначных
+    test("9", "9");
     return 0;
 }
